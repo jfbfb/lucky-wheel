@@ -19,8 +19,11 @@ if (-not (Test-Path ".git")) {
 Step "check"
 $changes = @(git status --porcelain)
 if ($changes.Count -eq 0) {
-    Write-Host "No changes." -ForegroundColor Yellow
-    Write-Host $SiteUrl
+    Write-Host ""
+    Write-Host "[INFO] No file changes. Nothing to push." -ForegroundColor Yellow
+    Write-Host "[INFO] Save your files (Ctrl+S) then run again if you edited." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Site is up to date: $SiteUrl"
     exit 0
 }
 git status -s
@@ -43,8 +46,8 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: push failed" -ForegroundColor Red;
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host " OK" -ForegroundColor Green
+Write-Host " PUSH OK" -ForegroundColor Green
 Write-Host " Site: $SiteUrl"
 Write-Host " Repo: $RepoUrl"
-Write-Host " Wait 1-2 min for Pages." -ForegroundColor Green
+Write-Host " Pages updates in 1-2 minutes." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
