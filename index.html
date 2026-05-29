@@ -1,0 +1,1707 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幸运转盘</title>
+  <style>
+    :root {
+      --bg-1: #1a1033;
+      --bg-2: #2d1b69;
+      --bg-3: #4c1d95;
+      --card: rgba(255, 255, 255, 0.09);
+      --text: #f8fafc;
+      --muted: #c4b5fd;
+      --line: rgba(255, 255, 255, 0.14);
+      --primary: #a855f7;
+      --primary-2: #ec4899;
+      --gold: #fbbf24;
+      --scene-size: min(78vw, 400px);
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(236, 72, 153, 0.28), transparent 35%),
+        radial-gradient(circle at 85% 10%, rgba(168, 85, 247, 0.35), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(251, 191, 36, 0.18), transparent 40%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2) 45%, var(--bg-3));
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 16px 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      background: linear-gradient(90deg, #fff 0%, #f5d0fe 45%, #fde68a 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .panel-title {
+      margin: 0 0 14px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #e9d5ff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--primary-2));
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 13px;
+      outline: none;
+      font-size: 14px;
+      color: var(--text);
+      background: rgba(15, 10, 35, 0.45);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input::placeholder { color: rgba(196, 181, 253, 0.55); }
+    input:focus {
+      border-color: rgba(168, 85, 247, 0.75);
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.22);
+    }
+    input[type="number"] { flex: 0 0 108px; }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    button:hover:not(:disabled):not(.spin-center-btn) { transform: translateY(-1px); }
+    button:active:not(:disabled):not(.spin-center-btn) { transform: translateY(0); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(168, 85, 247, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: #f3e8ff;
+      border: 1px solid var(--line);
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
+
+    .btn-danger {
+      background: rgba(251, 113, 133, 0.15);
+      color: #fecdd3;
+      border: 1px solid rgba(251, 113, 133, 0.35);
+    }
+
+    .btn-favorite {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.15));
+      color: #fde68a;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(168, 85, 247, 0.5) transparent;
+    }
+
+    .history-panel-body {
+      --history-row-height: 44px;
+      --history-visible-rows: 10;
+      min-height: calc(var(--history-row-height) * 2 + 24px);
+      max-height: min(
+        calc(var(--history-row-height) * var(--history-visible-rows) + 8px * (var(--history-visible-rows) - 1) + 16px),
+        52vh
+      );
+      overflow: auto;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(15, 10, 35, 0.35);
+    }
+
+    .history-list { max-height: none; overflow: visible; }
+
+    .item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 9px 11px;
+      background: rgba(255, 255, 255, 0.06);
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(168, 85, 247, 0.35);
+    }
+    .item-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+    }
+    .item-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+    .mini-btn { padding: 6px 9px; font-size: 12px; border-radius: 8px; }
+
+    .wheel-panel {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: visible;
+    }
+
+    .scene-wrap {
+      position: relative;
+      width: var(--scene-size);
+      height: var(--scene-size);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      outline: none;
+      border-radius: 50%;
+      filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.5));
+    }
+
+    .scene-wrap.is-pressure {
+      animation: pressurePulse 0.55s ease-in-out infinite;
+    }
+
+    @keyframes pressurePulse {
+      0%, 100% { filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.5)); }
+      50% { filter: drop-shadow(0 16px 48px rgba(220, 38, 38, 0.65)); }
+    }
+
+    .scene-wrap.cam-shake {
+      animation: camShake 0.12s linear infinite;
+    }
+
+    @keyframes camShake {
+      0% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(-6px, 4px) scale(1.02); }
+      50% { transform: translate(5px, -5px) scale(1.03); }
+      75% { transform: translate(-4px, -3px) scale(1.02); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    #bombCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 42%, #2a1f4d 0%, #120a24 72%);
+      border: 4px solid rgba(251, 191, 36, 0.35);
+    }
+
+    .vignette-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+      background: radial-gradient(circle, transparent 35%, rgba(80, 0, 0, 0.55) 100%);
+      transition: opacity 0.3s ease;
+    }
+
+    .vignette-overlay.active { opacity: 1; }
+
+    .explosion-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 240, 200, 0.95) 0%, rgba(255, 80, 30, 0.85) 28%, rgba(120, 0, 0, 0.92) 62%, rgba(20, 0, 0, 0.98) 100%);
+      mix-blend-mode: screen;
+    }
+    .explosion-overlay.boom { animation: boomFlash 1.1s ease-out forwards; }
+    @keyframes boomFlash {
+      0% { opacity: 0; transform: scale(0.6); }
+      12% { opacity: 1; transform: scale(1.15); }
+      35% { opacity: 0.92; transform: scale(1.45); }
+      100% { opacity: 0; transform: scale(2.2); }
+    }
+
+    .flight-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 189;
+      pointer-events: none;
+      display: none;
+    }
+
+    .flight-overlay.active {
+      display: block;
+    }
+
+    .lens-splatter {
+      position: fixed;
+      inset: 0;
+      z-index: 201;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 48% 52%, rgba(30, 10, 10, 0.15) 0%, transparent 42%),
+        repeating-linear-gradient(115deg, transparent 0 18px, rgba(0, 0, 0, 0.08) 18px 19px);
+    }
+    .lens-splatter.boom { animation: splatterHit 1.2s ease-out forwards; }
+    @keyframes splatterHit {
+      0% { opacity: 0; transform: scale(2.5); filter: blur(8px); }
+      18% { opacity: 0.85; transform: scale(1.05); filter: blur(0); }
+      100% { opacity: 0; transform: scale(1); filter: blur(2px); }
+    }
+
+    .spin-center-btn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 86px;
+      height: 86px;
+      border-radius: 999px;
+      border: 5px solid rgba(255, 255, 255, 0.95);
+      background: linear-gradient(145deg, #f59e0b, #ef4444);
+      color: #fff;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: 0.08em;
+      box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .spin-center-btn:not(:disabled) {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .scene-wrap.is-spinning .spin-center-btn {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.6);
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 10px 24px rgba(239, 68, 68, 0.45); }
+      50% { box-shadow: 0 10px 32px rgba(251, 191, 36, 0.65); }
+    }
+
+    .status {
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      background: rgba(15, 10, 35, 0.4);
+      border: 1px solid var(--line);
+      width: 100%;
+      color: #ddd6fe;
+    }
+    .status.is-hidden { display: none; }
+    .status.result {
+      color: #ecfdf5;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(52, 211, 153, 0.15));
+      border-color: rgba(52, 211, 153, 0.45);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .status.warn {
+      color: #fde68a;
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .actions-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .empty-tip {
+      color: rgba(196, 181, 253, 0.55);
+      font-size: 13px;
+      padding: 10px 4px;
+      text-align: center;
+    }
+
+    .favorites-trigger {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 100;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.9));
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      color: #422006;
+      font-size: 20px;
+      display: grid;
+      place-items: center;
+    }
+    .favorites-trigger[aria-expanded="true"] {
+      background: linear-gradient(145deg, #a855f7, #ec4899);
+      color: #fff;
+    }
+
+    .mute-trigger {
+      position: fixed;
+      top: 16px;
+      right: 68px;
+      z-index: 100;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(168, 85, 247, 0.92), rgba(124, 58, 237, 0.9));
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      color: #fff;
+      font-size: 18px;
+      display: grid;
+      place-items: center;
+    }
+    .mute-trigger.is-muted {
+      background: linear-gradient(145deg, rgba(71, 85, 105, 0.92), rgba(51, 65, 85, 0.9));
+      color: rgba(226, 232, 240, 0.75);
+    }
+
+    .favorites-panel {
+      position: fixed;
+      top: 68px;
+      right: 16px;
+      z-index: 99;
+      width: min(92vw, 340px);
+      max-height: min(70vh, 480px);
+      background: rgba(30, 20, 60, 0.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .favorites-panel.open { display: flex; }
+    .favorites-panel h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #f5d0fe;
+    }
+    .favorites-panel .list {
+      max-height: none;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .favorites-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 98;
+      background: rgba(10, 6, 24, 0.45);
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+    .favorites-backdrop.open { display: block; }
+
+    @media (min-width: 900px) {
+      .layout-grid {
+        grid-template-columns: 1fr 1.2fr 1fr;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button id="muteTrigger" class="mute-trigger" type="button" aria-label="静音" title="静音">🔊</button>
+  <button id="favoritesTrigger" class="favorites-trigger" type="button" aria-label="收藏" aria-expanded="false" title="收藏">★</button>
+  <div id="favoritesBackdrop" class="favorites-backdrop" aria-hidden="true"></div>
+  <aside id="favoritesPanel" class="favorites-panel" aria-hidden="true">
+    <h3>收藏</h3>
+    <ul id="presetList" class="list"></ul>
+  </aside>
+
+  <div id="explosionOverlay" class="explosion-overlay"></div>
+  <canvas id="flightCanvas" class="flight-overlay"></canvas>
+  <div id="lensSplatter" class="lens-splatter"></div>
+
+  <main class="page">
+    <header class="hero">
+      <h1>幸运转盘</h1>
+    </header>
+
+    <section class="layout-grid">
+      <div class="panel">
+        <h2 class="panel-title">选项</h2>
+        <div class="input-row">
+          <input id="optionInput" type="text" maxlength="30" placeholder="添加选项">
+          <button id="addOptionBtn" class="btn-primary">添加</button>
+        </div>
+        <div class="input-row">
+          <input id="quickNumberInput" type="number" min="2" max="200" inputmode="numeric" placeholder="N">
+          <button id="quickNumberBtn" class="btn-secondary" type="button">1~N</button>
+        </div>
+        <div class="actions-row">
+          <button id="savePresetBtn" class="btn-favorite" type="button">收藏</button>
+          <button id="clearOptionsBtn" class="btn-danger" type="button">清空</button>
+        </div>
+        <ul id="optionsList" class="list"></ul>
+      </div>
+
+      <div class="panel wheel-panel">
+        <div class="scene-wrap" id="sceneWrap" role="button" tabindex="0" aria-label="开始抽奖">
+          <canvas id="bombCanvas"></canvas>
+          <div id="vignetteOverlay" class="vignette-overlay"></div>
+          <button id="spinBtn" class="spin-center-btn" type="button">GO</button>
+        </div>
+        <div id="statusBox" class="status is-hidden"></div>
+      </div>
+
+      <div class="panel history-panel">
+        <h2 class="panel-title">历史</h2>
+        <div id="historyPanelBody" class="history-panel-body">
+          <ul id="historyList" class="list history-list"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const STORAGE_KEYS = { options: "lw_options", history: "lw_history", presets: "lw_presets", muted: "lw_muted" };
+      const HISTORY_LIMIT = 10;
+      const MAX_QUICK_NUMBER = 200;
+      const COLORS = ["#6dd65c", "#e04737", "#f2c43c", "#275be8", "#78db70", "#ed5e4f", "#3f6ff0", "#87d76d"];
+      const DEFAULT_OPTIONS = ["吃火锅", "看电影", "喝奶茶", "出去散步"];
+
+      const optionInput = document.getElementById("optionInput");
+      const quickNumberInput = document.getElementById("quickNumberInput");
+      const quickNumberBtn = document.getElementById("quickNumberBtn");
+      const addOptionBtn = document.getElementById("addOptionBtn");
+      const clearOptionsBtn = document.getElementById("clearOptionsBtn");
+      const optionsList = document.getElementById("optionsList");
+      const sceneWrap = document.getElementById("sceneWrap");
+      const bombCanvas = document.getElementById("bombCanvas");
+      const flightCanvas = document.getElementById("flightCanvas");
+      const vignetteOverlay = document.getElementById("vignetteOverlay");
+      const explosionOverlay = document.getElementById("explosionOverlay");
+      const lensSplatter = document.getElementById("lensSplatter");
+      const spinBtn = document.getElementById("spinBtn");
+      const statusBox = document.getElementById("statusBox");
+      const historyList = document.getElementById("historyList");
+      const savePresetBtn = document.getElementById("savePresetBtn");
+      const presetList = document.getElementById("presetList");
+      const muteTrigger = document.getElementById("muteTrigger");
+      const favoritesTrigger = document.getElementById("favoritesTrigger");
+      const favoritesPanel = document.getElementById("favoritesPanel");
+      const favoritesBackdrop = document.getElementById("favoritesBackdrop");
+
+      const state = { options: [], history: [], presets: [], isSpinning: false, lastResult: "" };
+      const scene = {
+        ctx: bombCanvas.getContext("2d"),
+        w: 0,
+        h: 0,
+        raf: 0,
+        phase: "idle",
+        holder: 0,
+        fromHolder: 0,
+        toHolder: 0,
+        passStart: 0,
+        passDur: 650,
+        passMin: 48,
+        passDecay: 0.9,
+        passT: 0,
+        _lastNow: 0,
+        passesDone: 0,
+        totalPasses: 0,
+        winnerIndex: 0,
+        progress: 0,
+        explodeStart: 0,
+        flyStart: 0,
+        flyT: 0,
+        particles: [],
+        _sfxExploded: false
+      };
+      const flight = {
+        ctx: flightCanvas.getContext("2d"),
+        w: 0,
+        h: 0,
+        active: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        rot: 0,
+        rotV: 0,
+        t: 0,
+        trail: []
+      };
+
+      const audio = {
+        ctx: null,
+        master: null,
+        muted: false,
+        tensionActive: false,
+        tensionNodes: null,
+
+        _uiTone(opts) {
+          if (this.muted) return;
+          this.unlock();
+          if (!this.ctx) return;
+          const time = this.now() + (opts.delay || 0);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const attack = opts.attack != null ? opts.attack : 0.004;
+          const decay = opts.decay != null ? opts.decay : 0.07;
+          const peak = opts.gain != null ? opts.gain : 0.1;
+          osc.type = opts.type || "sine";
+          osc.frequency.setValueAtTime(opts.freq, time);
+          if (opts.freqEnd != null) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, opts.freqEnd), time + decay);
+          }
+          gain.gain.setValueAtTime(0.0001, time);
+          gain.gain.exponentialRampToValueAtTime(peak, time + attack);
+          gain.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+          osc.connect(gain);
+          gain.connect(this.master);
+          osc.start(time);
+          osc.stop(time + decay + 0.03);
+        },
+
+        playUiClick() {
+          this._uiTone({ freq: 520, freqEnd: 420, gain: 0.07, decay: 0.05, type: "triangle" });
+        },
+
+        playUiAdd() {
+          this._uiTone({ freq: 392, freqEnd: 587, gain: 0.1, decay: 0.08, type: "sine" });
+        },
+
+        playUiRemove() {
+          this._uiTone({ freq: 440, freqEnd: 262, gain: 0.09, decay: 0.07, type: "triangle" });
+        },
+
+        playUiClear() {
+          this._uiTone({ freq: 330, freqEnd: 196, gain: 0.1, decay: 0.12, type: "sawtooth" });
+          this._uiTone({ freq: 220, freqEnd: 130, gain: 0.07, decay: 0.14, type: "triangle", delay: 0.06 });
+        },
+
+        playUiBatch() {
+          [392, 494, 587].forEach((freq, i) => {
+            this._uiTone({ freq, gain: 0.08, decay: 0.06, type: "sine", delay: i * 0.045 });
+          });
+        },
+
+        playUiSave() {
+          this._uiTone({ freq: 523, gain: 0.09, decay: 0.1, type: "sine" });
+          this._uiTone({ freq: 659, gain: 0.1, decay: 0.12, type: "triangle", delay: 0.07 });
+        },
+
+        playUiLoad() {
+          [330, 415, 523].forEach((freq, i) => {
+            this._uiTone({ freq, gain: 0.085, decay: 0.08, type: "sine", delay: i * 0.05 });
+          });
+        },
+
+        playUiDelete() {
+          this._uiTone({ freq: 196, freqEnd: 98, gain: 0.11, decay: 0.14, type: "sawtooth" });
+        },
+
+        playUiPanel(open) {
+          if (open) {
+            this._uiTone({ freq: 350, freqEnd: 520, gain: 0.08, decay: 0.09, type: "sine" });
+          } else {
+            this._uiTone({ freq: 450, freqEnd: 300, gain: 0.07, decay: 0.08, type: "triangle" });
+          }
+        },
+
+        unlock() {
+          if (this.muted) return;
+          if (!this.ctx) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            this.ctx = new Ctx();
+            this.master = this.ctx.createGain();
+            this.master.gain.value = 0.42;
+            this.master.connect(this.ctx.destination);
+          }
+          if (this.ctx.state === "suspended") {
+            this.ctx.resume();
+          }
+        },
+
+        now() {
+          return this.ctx ? this.ctx.currentTime : 0;
+        },
+
+        _playKick(t) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(180, t);
+          osc.frequency.exponentialRampToValueAtTime(48, t + 0.12);
+          gain.gain.setValueAtTime(0.0001, t);
+          gain.gain.exponentialRampToValueAtTime(0.35, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+          osc.connect(gain);
+          gain.connect(this.master);
+          osc.start(t);
+          osc.stop(t + 0.2);
+        },
+
+        startTension() {
+          if (this.muted) return;
+          this.unlock();
+          if (!this.ctx) return;
+          this.stopTension();
+
+          const t = this.now();
+          const bufferSize = 2 * this.ctx.sampleRate;
+          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i += 1) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = noiseBuffer;
+          noise.loop = true;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = "lowpass";
+          filter.frequency.value = 180;
+          filter.Q.value = 0.7;
+
+          const droneGain = this.ctx.createGain();
+          droneGain.gain.value = 0.0001;
+          droneGain.gain.setTargetAtTime(0.22, t, 0.25);
+
+          const osc = this.ctx.createOscillator();
+          osc.type = "sawtooth";
+          osc.frequency.value = 52;
+          const oscGain = this.ctx.createGain();
+          oscGain.gain.value = 0.0001;
+          oscGain.gain.setTargetAtTime(0.08, t, 0.3);
+
+          noise.connect(filter);
+          filter.connect(droneGain);
+          droneGain.connect(this.master);
+          osc.connect(oscGain);
+          oscGain.connect(this.master);
+
+          noise.start(t);
+          osc.start(t);
+          this._playKick(t);
+
+          this.tensionActive = true;
+          this.tensionNodes = { noise, osc, droneGain, oscGain, filter };
+        },
+
+        updateTension(progress) {
+          if (!this.tensionActive || !this.tensionNodes || this.muted) return;
+          const p = Math.max(0, Math.min(1, progress));
+          const time = this.now();
+          const { filter, droneGain, osc } = this.tensionNodes;
+          filter.frequency.setTargetAtTime(180 + p * 520, time, 0.05);
+          droneGain.gain.setTargetAtTime(0.22 + p * 0.28, time, 0.08);
+          osc.frequency.setTargetAtTime(52 + p * 38, time, 0.08);
+        },
+
+        playPassTick(progress) {
+          if (this.muted) return;
+          this.unlock();
+          if (!this.ctx) return;
+          const p = Math.max(0, Math.min(1, progress));
+          const time = this.now();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "square";
+          osc.frequency.value = 280 + p * 420;
+          gain.gain.setValueAtTime(0.0001, time);
+          gain.gain.exponentialRampToValueAtTime(0.12 + p * 0.1, time + 0.005);
+          gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+          osc.connect(gain);
+          gain.connect(this.master);
+          osc.start(time);
+          osc.stop(time + 0.06);
+        },
+
+        playExplosion() {
+          if (this.muted) return;
+          this.unlock();
+          if (!this.ctx) return;
+          const time = this.now();
+          const bufferSize = Math.floor(this.ctx.sampleRate * 0.3);
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const noiseData = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i += 1) {
+            noiseData[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const noiseGain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = "bandpass";
+          filter.frequency.value = 800;
+          noiseGain.gain.setValueAtTime(0.5, time);
+          noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+          noise.connect(filter);
+          filter.connect(noiseGain);
+          noiseGain.connect(this.master);
+          noise.start(time);
+
+          const osc = this.ctx.createOscillator();
+          const boomGain = this.ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(110, time);
+          osc.frequency.exponentialRampToValueAtTime(28, time + 0.2);
+          boomGain.gain.setValueAtTime(0.0001, time);
+          boomGain.gain.exponentialRampToValueAtTime(0.45, time + 0.02);
+          boomGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.28);
+          osc.connect(boomGain);
+          boomGain.connect(this.master);
+          osc.start(time);
+          osc.stop(time + 0.3);
+        },
+
+        playResult() {
+          if (this.muted) return;
+          this.unlock();
+          if (!this.ctx) return;
+          const time = this.now();
+          [523.25, 659.25, 783.99].forEach((freq, i) => {
+            const start = time + i * 0.07;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+            osc.connect(gain);
+            gain.connect(this.master);
+            osc.start(start);
+            osc.stop(start + 0.4);
+          });
+        },
+
+        stopTension() {
+          if (!this.tensionNodes) return;
+          const time = this.now();
+          const { noise, osc, droneGain, oscGain } = this.tensionNodes;
+          try {
+            droneGain.gain.setTargetAtTime(0.0001, time, 0.06);
+            oscGain.gain.setTargetAtTime(0.0001, time, 0.06);
+            noise.stop(time + 0.15);
+            osc.stop(time + 0.15);
+          } catch {}
+          this.tensionActive = false;
+          this.tensionNodes = null;
+        },
+
+        stopAll() {
+          this.stopTension();
+        }
+      };
+
+      function readJSON(key, fallback) {
+        try {
+          const text = localStorage.getItem(key);
+          return text ? JSON.parse(text) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveJSON(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+      }
+
+      function nowText() {
+        return new Date().toLocaleString("zh-CN", { hour12: false });
+      }
+
+      function normalizeOptions(arr) {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((v) => String(v).trim()).filter(Boolean).slice(0, 200);
+      }
+
+      function uniqueId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      }
+
+      function escapeHTML(text) {
+        return text
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function setStatus(message, type) {
+        statusBox.className = "status";
+        if (!message) {
+          statusBox.classList.add("is-hidden");
+          statusBox.textContent = "";
+          return;
+        }
+        if (type) statusBox.classList.add(type);
+        statusBox.textContent = message;
+      }
+
+      function loadState() {
+        const options = normalizeOptions(readJSON(STORAGE_KEYS.options, []));
+        state.options = options.length > 0 ? options : [...DEFAULT_OPTIONS];
+        state.history = Array.isArray(readJSON(STORAGE_KEYS.history, []))
+          ? readJSON(STORAGE_KEYS.history, []).slice(0, HISTORY_LIMIT)
+          : [];
+        state.presets = Array.isArray(readJSON(STORAGE_KEYS.presets, []))
+          ? readJSON(STORAGE_KEYS.presets, [])
+          : [];
+        audio.muted = localStorage.getItem(STORAGE_KEYS.muted) === "1";
+        updateMuteButton();
+      }
+
+      function persistOptions() { saveJSON(STORAGE_KEYS.options, state.options); }
+      function persistHistory() { saveJSON(STORAGE_KEYS.history, state.history); }
+      function persistPresets() { saveJSON(STORAGE_KEYS.presets, state.presets); }
+
+      function persistMuted() {
+        try { localStorage.setItem(STORAGE_KEYS.muted, audio.muted ? "1" : "0"); } catch {}
+      }
+
+      function updateMuteButton() {
+        muteTrigger.textContent = audio.muted ? "🔇" : "🔊";
+        muteTrigger.setAttribute("aria-label", audio.muted ? "取消静音" : "静音");
+        muteTrigger.setAttribute("title", audio.muted ? "取消静音" : "静音");
+        muteTrigger.classList.toggle("is-muted", audio.muted);
+      }
+
+      function toggleMute() {
+        audio.muted = !audio.muted;
+        if (audio.muted) {
+          audio.stopAll();
+        } else {
+          audio.unlock();
+          audio.playUiClick();
+        }
+        persistMuted();
+        updateMuteButton();
+      }
+
+      function updateSpinAvailability() {
+        spinBtn.disabled = state.isSpinning || state.options.length < 2;
+        if (state.isSpinning) return;
+        if (state.options.length < 2) setStatus("至少 2 项", "warn");
+        else if (!state.lastResult) setStatus("");
+      }
+
+      function renderOptions() {
+        if (state.options.length === 0) {
+          optionsList.innerHTML = '<li class="empty-tip">—</li>';
+        } else {
+          optionsList.innerHTML = state.options
+            .map((item, idx) =>
+              '<li class="item"><span class="item-text">' + escapeHTML(item) +
+              '</span><button class="mini-btn btn-danger" data-remove-option="' + idx + '">删</button></li>'
+            )
+            .join("");
+        }
+        updateSpinAvailability();
+      }
+
+      function renderHistory() {
+        if (state.history.length === 0) {
+          historyList.innerHTML = '<li class="empty-tip">—</li>';
+          return;
+        }
+        historyList.innerHTML = state.history
+          .map((record) =>
+            '<li class="item"><span class="item-text">' + escapeHTML(record.result || "") +
+            '</span><span class="item-meta">' + escapeHTML(record.time || "") + "</span></li>"
+          )
+          .join("");
+      }
+
+      function renderPresets() {
+        if (state.presets.length === 0) {
+          presetList.innerHTML = '<li class="empty-tip">—</li>';
+          return;
+        }
+        presetList.innerHTML = state.presets
+          .map((preset) => {
+            const name = escapeHTML(preset.name || "未命名");
+            const count = Array.isArray(preset.options) ? preset.options.length : 0;
+            return (
+              '<li class="item"><span class="item-text">' + name + " · " + count +
+              '</span><button class="mini-btn btn-secondary" data-load-preset="' + preset.id + '">加载</button>' +
+              '<button class="mini-btn btn-danger" data-delete-preset="' + preset.id + '">删</button></li>'
+            );
+          })
+          .join("");
+      }
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      function lerpColor(a, b, t) {
+        const pa = [parseInt(a.slice(1, 3), 16), parseInt(a.slice(3, 5), 16), parseInt(a.slice(5, 7), 16)];
+        const pb = [parseInt(b.slice(1, 3), 16), parseInt(b.slice(3, 5), 16), parseInt(b.slice(5, 7), 16)];
+        return "rgb(" +
+          Math.round(lerp(pa[0], pb[0], t)) + "," +
+          Math.round(lerp(pa[1], pb[1], t)) + "," +
+          Math.round(lerp(pa[2], pb[2], t)) + ")";
+      }
+
+      function roundedRectPath(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      function getCharPos(index, total, cx, cy, radius) {
+        const angle = -Math.PI / 2 + (index / total) * Math.PI * 2;
+        return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius, angle: angle + Math.PI / 2 };
+      }
+
+      function drawPuzzlePerson(ctx, x, y, facing, color, label, scale, panic, tension) {
+        const s = scale || 1;
+        const bodyW = 58 * s;
+        const bodyH = 56 * s;
+        const tabR = 9 * s;
+        const notchR = 7 * s;
+        const wobble = panic ? Math.sin(performance.now() / 35) * (2.6 * s) : 0;
+        const stress = Math.max(0, Math.min(1, tension || 0));
+
+        ctx.save();
+        ctx.translate(x, y + wobble);
+        ctx.rotate(facing);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = "rgba(0,0,0,0.2)";
+        ctx.lineWidth = Math.max(1.2, 1.6 * s);
+
+        roundedRectPath(ctx, -bodyW / 2, -bodyH / 2, bodyW, bodyH, 11 * s);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, -bodyH / 2 - tabR * 0.2, tabR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(-bodyW / 2 - tabR * 0.3, 0, tabR, 0, Math.PI * 2);
+        ctx.arc(bodyW / 2 + tabR * 0.3, 0, tabR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(0, bodyH / 2 + notchR * 0.1, notchR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.fillStyle = "#111827";
+        ctx.beginPath();
+        ctx.arc(-7 * s, -14 * s, 2.5 * s, 0, Math.PI * 2);
+        ctx.arc(7 * s, -14 * s, 2.5 * s, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.lineWidth = 1.8 * s;
+        ctx.strokeStyle = "#111827";
+        ctx.beginPath();
+        const browTilt = 6 * stress * s;
+        ctx.moveTo(-11 * s, -20 * s + browTilt * 0.25);
+        ctx.lineTo(-3 * s, -22 * s - browTilt);
+        ctx.moveTo(11 * s, -20 * s + browTilt * 0.25);
+        ctx.lineTo(3 * s, -22 * s - browTilt);
+        ctx.stroke();
+
+        ctx.beginPath();
+        if (stress < 0.35) {
+          ctx.arc(0, -5 * s, 10 * s, 0.2, Math.PI - 0.2);
+        } else if (stress < 0.72) {
+          ctx.moveTo(-8 * s, -2 * s);
+          ctx.quadraticCurveTo(0, -5 * s, 8 * s, -2 * s);
+        } else {
+          ctx.ellipse(0, -3 * s, 4.5 * s, 6.5 * s, 0, 0, Math.PI * 2);
+        }
+        ctx.stroke();
+
+        if (stress > 0.45) {
+          const alpha = Math.min(1, (stress - 0.45) / 0.55);
+          const sweatShift = Math.sin(performance.now() / 120 + x * 0.02) * 1.8 * s;
+          ctx.fillStyle = "rgba(125,211,252," + (0.45 + alpha * 0.5) + ")";
+          ctx.beginPath();
+          ctx.ellipse(13 * s + sweatShift, -11 * s, 2.2 * s, 4 * s, 0, 0, Math.PI * 2);
+          ctx.fill();
+          if (stress > 0.75) {
+            ctx.beginPath();
+            ctx.ellipse(-13 * s - sweatShift * 0.5, -10 * s, 1.8 * s, 3.2 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(x, y - (bodyH * 0.8));
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = "bold " + Math.max(10, 11 * s) + "px sans-serif";
+        ctx.textAlign = "center";
+        const text = label.length > 6 ? label.slice(0, 5) + "…" : label;
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      }
+
+      function drawBomb(ctx, x, y, scale, heat, spark) {
+        const r = 13 * scale;
+        ctx.save();
+        ctx.shadowColor = heat > 0.45 ? "rgba(239,68,68,0.9)" : "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 10 + heat * 42;
+        ctx.fillStyle = lerpColor("#2f2f33", "#d62828", heat);
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = lerpColor("#111827", "#7f1d1d", heat);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#4b5563";
+        roundedRectPath(ctx, x - 3, y - r - 10, 6, 10, 2);
+        ctx.fill();
+        if (spark) {
+          ctx.fillStyle = "#fbbf24";
+          for (let i = 0; i < 6; i += 1) {
+            const a = performance.now() / 70 + i * 1.2;
+            ctx.beginPath();
+            ctx.arc(x + Math.cos(a) * 4, y - r - 14 + Math.sin(a * 2.1) * 3, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      function resizeScene() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        scene.w = sceneWrap.clientWidth;
+        scene.h = sceneWrap.clientHeight;
+        bombCanvas.width = Math.max(2, Math.floor(scene.w * dpr));
+        bombCanvas.height = Math.max(2, Math.floor(scene.h * dpr));
+        scene.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function resizeFlightCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        flight.w = window.innerWidth;
+        flight.h = window.innerHeight;
+        flightCanvas.width = Math.max(2, Math.floor(flight.w * dpr));
+        flightCanvas.height = Math.max(2, Math.floor(flight.h * dpr));
+        flight.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function clearFlightOverlay() {
+        flight.active = false;
+        flight.t = 0;
+        flight.trail = [];
+        flightCanvas.classList.remove("active");
+        flight.ctx.clearRect(0, 0, flight.w, flight.h);
+      }
+
+      function startFlightOverlay(startX, startY, vx, vy, rotV) {
+        resizeFlightCanvas();
+        flight.active = true;
+        flight.t = 0;
+        flight.x = startX;
+        flight.y = startY;
+        flight.vx = vx;
+        flight.vy = vy;
+        flight.rot = 0;
+        flight.rotV = rotV;
+        flight.trail = [];
+        flightCanvas.classList.add("active");
+      }
+
+      function updateFlightOverlay(dtMs, winnerLabel, winnerColor) {
+        if (!flight.active) return false;
+        const dt = dtMs / 16.67;
+        flight.t += dtMs;
+        flight.x += flight.vx * dt;
+        flight.y += flight.vy * dt;
+        flight.vy += 0.22 * dt;
+        flight.rot += flight.rotV * dt;
+
+        if (flight.t % 60 < 15) {
+          flight.trail.push({
+            x: flight.x - flight.vx * 1.8,
+            y: flight.y - flight.vy * 1.2,
+            r: 4 + Math.random() * 5,
+            life: 0.55
+          });
+        }
+        flight.trail.forEach((smoke) => {
+          smoke.x -= flight.vx * 0.08 * dt;
+          smoke.y -= flight.vy * 0.06 * dt;
+          smoke.life -= 0.035 * dt;
+        });
+        flight.trail = flight.trail.filter((smoke) => smoke.life > 0);
+
+        const ctx = flight.ctx;
+        ctx.clearRect(0, 0, flight.w, flight.h);
+        flight.trail.forEach((smoke) => {
+          ctx.globalAlpha = Math.max(0, smoke.life);
+          const rr = smoke.r * (1.1 - smoke.life * 0.2);
+          const grad = ctx.createRadialGradient(smoke.x, smoke.y, 0, smoke.x, smoke.y, rr);
+          grad.addColorStop(0, "rgba(255,237,213,0.72)");
+          grad.addColorStop(0.55, "rgba(251,146,60,0.35)");
+          grad.addColorStop(1, "rgba(30,41,59,0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(smoke.x, smoke.y, rr, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+        drawPuzzlePerson(
+          ctx,
+          flight.x,
+          flight.y,
+          flight.rot,
+          winnerColor,
+          winnerLabel,
+          1.18,
+          true,
+          1
+        );
+
+        const outX = flight.x < -120 || flight.x > flight.w + 120;
+        const outY = flight.y < -140 || flight.y > flight.h + 140;
+        return outX || outY;
+      }
+
+      function spawnExplosionParticles(x, y) {
+        scene.particles = [];
+        for (let i = 0; i < 56; i += 1) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 3 + Math.random() * 11;
+          scene.particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1,
+            size: 2 + Math.random() * 8,
+            color: Math.random() > 0.5 ? "#fbbf24" : "#ef4444"
+          });
+        }
+      }
+
+      function drawScene(now) {
+        const ctx = scene.ctx;
+        const w = scene.w;
+        const h = scene.h;
+        const cx = w / 2;
+        const cy = h / 2;
+        const n = state.options.length;
+
+        ctx.clearRect(0, 0, w, h);
+        const bg = ctx.createRadialGradient(cx, cy * 0.78, Math.min(w, h) * 0.07, cx, cy, Math.max(w, h) * 0.58);
+        bg.addColorStop(0, "#3a2b68");
+        bg.addColorStop(1, "#120a24");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+
+        if (n < 2) {
+          ctx.fillStyle = "rgba(196,181,253,0.55)";
+          ctx.textAlign = "center";
+          ctx.font = "14px sans-serif";
+          ctx.fillText("—", cx, cy);
+          return;
+        }
+
+        const radius = Math.min(w, h) * 0.34;
+        const heat = scene.progress;
+        const bombScale = 0.55 + heat * 1.25;
+        let bombX = cx;
+        let bombY = cy;
+        let bombHolder = scene.holder;
+
+        if (scene.phase === "passing" || scene.phase === "idle") {
+          const from = getCharPos(scene.fromHolder, n, cx, cy, radius);
+          const to = getCharPos(scene.toHolder, n, cx, cy, radius);
+          const t = scene.phase === "idle" ? 1 : Math.min(1, scene.passT / scene.passDur);
+          const ease = 1 - Math.pow(1 - t, 3);
+          bombX = lerp(from.x, to.x, ease);
+          bombY = lerp(from.y, to.y, ease) - 32;
+          if (t >= 1) bombHolder = scene.toHolder;
+        } else {
+          const p = getCharPos(scene.winnerIndex, n, cx, cy, radius);
+          bombX = p.x;
+          bombY = p.y - 32;
+        }
+
+        for (let i = 0; i < n; i += 1) {
+          if (scene.phase === "fly" && i === scene.winnerIndex) continue;
+          const p = getCharPos(i, n, cx, cy, radius);
+          const isHolder = i === bombHolder && scene.phase !== "fly";
+          drawPuzzlePerson(
+            ctx,
+            p.x,
+            p.y,
+            p.angle,
+            COLORS[i % COLORS.length],
+            state.options[i],
+            isHolder ? 1.05 : 1,
+            scene.phase === "passing" && heat > 0.34 && isHolder,
+            scene.phase === "passing" ? heat : 0.15
+          );
+        }
+
+        if (scene.phase !== "fly") {
+          drawBomb(ctx, bombX, bombY, bombScale, heat, heat > 0.18);
+        }
+
+        scene.particles.forEach((p) => {
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1;
+
+        // fly 阶段改为独立全屏 overlay 渲染，不在主转盘场景绘制
+
+        if (scene.phase === "passing" && heat > 0.25) {
+          ctx.fillStyle = "rgba(185,28,28," + (heat * 0.2) + ")";
+          ctx.fillRect(0, 0, w, h);
+        }
+      }
+
+      function finishSpin() {
+        cancelAnimationFrame(scene.raf);
+        audio.playResult();
+        audio.stopAll();
+        const winnerText = state.options[scene.winnerIndex];
+        state.isSpinning = false;
+        state.lastResult = winnerText;
+        scene.phase = "idle";
+        scene.progress = 0;
+        scene._lastNow = 0;
+        scene._sfxExploded = false;
+        scene.flyStart = 0;
+        scene.flyT = 0;
+        scene.particles = [];
+        scene.holder = 0;
+        scene.fromHolder = 0;
+        scene.toHolder = 0;
+        sceneWrap.classList.remove("is-spinning", "is-pressure", "cam-shake");
+        vignetteOverlay.classList.remove("active");
+        explosionOverlay.classList.remove("boom");
+        lensSplatter.classList.remove("boom");
+        clearFlightOverlay();
+        appendHistory(winnerText);
+        setStatus(winnerText, "result");
+        updateSpinAvailability();
+        resizeScene();
+        drawScene(performance.now());
+      }
+
+      function updateScene(now) {
+        const n = state.options.length;
+        if (n < 2) {
+          finishSpin();
+          return;
+        }
+
+        if (scene.phase === "passing") {
+          scene.passT = now - scene.passStart;
+          scene.progress = Math.min(
+            1,
+            (scene.passesDone / Math.max(1, scene.totalPasses)) * 0.9 + (scene.passT / scene.passDur) * 0.1
+          );
+          vignetteOverlay.classList.toggle("active", scene.progress > 0.28);
+          sceneWrap.classList.toggle("is-pressure", scene.progress > 0.4);
+          audio.updateTension(scene.progress);
+
+          if (scene.passT >= scene.passDur) {
+            scene.holder = scene.toHolder;
+            scene.passesDone += 1;
+            audio.playPassTick(scene.progress);
+            if (scene.passesDone >= scene.totalPasses) {
+              scene.phase = "exploding";
+              scene.explodeStart = now;
+              scene._sfxExploded = true;
+              audio.playExplosion();
+              audio.stopTension();
+              const p = getCharPos(scene.winnerIndex, n, scene.w / 2, scene.h / 2, Math.min(scene.w, scene.h) * 0.34);
+              spawnExplosionParticles(p.x, p.y - 32);
+              explosionOverlay.classList.remove("boom");
+              lensSplatter.classList.remove("boom");
+              void explosionOverlay.offsetWidth;
+              explosionOverlay.classList.add("boom");
+              lensSplatter.classList.add("boom");
+              sceneWrap.classList.add("cam-shake");
+            } else {
+              scene.fromHolder = scene.holder;
+              scene.toHolder = (scene.holder + 1) % n;
+              scene.passStart = now;
+              scene.passDur = Math.max(scene.passMin, scene.passDur * scene.passDecay);
+              scene.passT = 0;
+            }
+          }
+        }
+
+        if (scene.phase === "exploding") {
+          scene.progress = 1;
+          scene.particles.forEach((p) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.18;
+            p.life -= 0.03;
+          });
+          scene.particles = scene.particles.filter((p) => p.life > 0);
+          if (now - scene.explodeStart > 260) {
+            scene.phase = "fly";
+            scene.flyStart = now;
+            scene.flyT = 0;
+            const radius = Math.min(scene.w, scene.h) * 0.34;
+            const winnerPos = getCharPos(scene.winnerIndex, n, scene.w / 2, scene.h / 2, radius);
+            const sceneRect = sceneWrap.getBoundingClientRect();
+            const launchAngle = (-Math.PI / 2) + (Math.random() > 0.5 ? 0.62 : -0.62);
+            const launchSpeed = 12 + Math.random() * 3;
+            startFlightOverlay(
+              sceneRect.left + winnerPos.x,
+              sceneRect.top + winnerPos.y,
+              Math.cos(launchAngle) * launchSpeed,
+              Math.sin(launchAngle) * launchSpeed,
+              (Math.random() > 0.5 ? 1 : -1) * (0.08 + Math.random() * 0.05)
+            );
+            scene._lastNow = now;
+          }
+        }
+
+        if (scene.phase === "fly") {
+          const dtMs = Math.min(48, Math.max(8, now - (scene._lastNow || now)));
+          scene._lastNow = now;
+          const offscreen = updateFlightOverlay(
+            dtMs,
+            state.options[scene.winnerIndex],
+            COLORS[scene.winnerIndex % COLORS.length]
+          );
+          if (offscreen || now - scene.flyStart > 1300) {
+            finishSpin();
+            return;
+          }
+        }
+
+        drawScene(now);
+        scene.raf = requestAnimationFrame(updateScene);
+      }
+
+      function renderScene() {
+        resizeScene();
+        resizeFlightCanvas();
+        drawScene(performance.now());
+      }
+
+      function renderAll() {
+        renderOptions();
+        renderHistory();
+        renderPresets();
+        renderScene();
+      }
+
+      function addOption() {
+        const value = optionInput.value.trim();
+        if (!value) return;
+        state.options.push(value);
+        optionInput.value = "";
+        persistOptions();
+        renderOptions();
+        renderScene();
+        audio.playUiAdd();
+      }
+
+      function removeOption(index) {
+        if (index < 0 || index >= state.options.length) return;
+        state.options.splice(index, 1);
+        persistOptions();
+        renderOptions();
+        renderScene();
+        audio.playUiRemove();
+      }
+
+      function clearOptions() {
+        if (state.options.length === 0) return;
+        if (!window.confirm("清空所有选项？")) return;
+        state.options = [];
+        state.lastResult = "";
+        persistOptions();
+        renderOptions();
+        renderScene();
+        setStatus("");
+        audio.playUiClear();
+      }
+
+      function generateQuickNumberOptions() {
+        const raw = quickNumberInput.value.trim();
+        const n = Number(raw);
+        if (!raw || !Number.isInteger(n) || n < 2 || n > MAX_QUICK_NUMBER) return;
+        if (state.options.length > 0 && !window.confirm("替换为 1~" + n + "？")) return;
+        state.options = Array.from({ length: n }, (_, i) => String(i + 1));
+        state.lastResult = "";
+        quickNumberInput.value = "";
+        persistOptions();
+        renderOptions();
+        renderScene();
+        setStatus("");
+        audio.playUiBatch();
+      }
+
+      function appendHistory(result) {
+        state.history.unshift({ id: uniqueId(), time: nowText(), result: result });
+        state.history = state.history.slice(0, HISTORY_LIMIT);
+        persistHistory();
+        renderHistory();
+      }
+
+      function spinWheel() {
+        if (state.isSpinning || state.options.length < 2) {
+          updateSpinAvailability();
+          return;
+        }
+        const n = state.options.length;
+        state.isSpinning = true;
+        audio.stopAll();
+        updateSpinAvailability();
+        setStatus("");
+
+        scene.winnerIndex = Math.floor(Math.random() * n);
+        const targetTotalMs = 5000;
+        const explodeMs = 260;
+        const flyMs = 1300;
+        const passingBudget = Math.max(1500, targetTotalMs - explodeMs - flyMs);
+        const desiredPasses = 24;
+
+        let cycles = Math.round((desiredPasses - scene.winnerIndex) / n);
+        cycles = Math.max(0, cycles);
+        scene.totalPasses = scene.winnerIndex + cycles * n;
+        if (n <= 24 && scene.totalPasses < 6) {
+          scene.totalPasses += n;
+        }
+        if (scene.totalPasses <= 0) {
+          scene.totalPasses = Math.min(6, n);
+        }
+
+        const basePass = Math.max(
+          55,
+          Math.min(190, (passingBudget / scene.totalPasses) * 1.35)
+        );
+        scene.holder = 0;
+        scene.fromHolder = 0;
+        scene.toHolder = 1 % n;
+        scene.passesDone = 0;
+        scene.passDur = basePass;
+        scene.passMin = Math.max(38, basePass * 0.35);
+        scene.passDecay = 0.9;
+        scene.passStart = performance.now();
+        scene.passT = 0;
+        scene.progress = 0;
+        scene._lastNow = 0;
+        scene._sfxExploded = false;
+        scene.phase = "passing";
+        sceneWrap.classList.add("is-spinning");
+        audio.unlock();
+        audio.startTension();
+        resizeScene();
+        cancelAnimationFrame(scene.raf);
+        scene.raf = requestAnimationFrame(updateScene);
+      }
+
+      function setFavoritesOpen(open) {
+        const wasOpen = favoritesPanel.classList.contains("open");
+        if (wasOpen === open) return;
+        favoritesPanel.classList.toggle("open", open);
+        favoritesBackdrop.classList.toggle("open", open);
+        favoritesTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+        favoritesPanel.setAttribute("aria-hidden", open ? "false" : "true");
+        favoritesBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
+        audio.playUiPanel(open);
+      }
+
+      function savePreset(name) {
+        const trimmedName = String(name || "").trim();
+        if (!trimmedName || state.options.length === 0) return false;
+        const options = normalizeOptions(state.options);
+        const existing = state.presets.find((p) => p.name === trimmedName);
+        if (existing) {
+          if (!window.confirm("覆盖「" + trimmedName + "」？")) return false;
+          existing.options = options;
+          existing.createdAt = nowText();
+        } else {
+          state.presets.unshift({ id: uniqueId(), name: trimmedName, options: options, createdAt: nowText() });
+        }
+        persistPresets();
+        renderPresets();
+        audio.playUiSave();
+        return true;
+      }
+
+      function savePresetByPrompt() {
+        if (state.options.length === 0) return;
+        const name = window.prompt("命名");
+        if (name === null) return;
+        savePreset(name);
+      }
+
+      function loadPreset(presetId) {
+        const target = state.presets.find((p) => p.id === presetId);
+        if (!target) return;
+        state.options = normalizeOptions(target.options);
+        state.lastResult = "";
+        persistOptions();
+        renderOptions();
+        renderScene();
+        setFavoritesOpen(false);
+        audio.playUiLoad();
+      }
+
+      function deletePreset(presetId) {
+        const target = state.presets.find((p) => p.id === presetId);
+        if (!target || !window.confirm("删除「" + target.name + "」？")) return;
+        state.presets = state.presets.filter((p) => p.id !== presetId);
+        persistPresets();
+        renderPresets();
+        audio.playUiDelete();
+      }
+
+      function bindEvents() {
+        addOptionBtn.addEventListener("click", addOption);
+        optionInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addOption(); });
+        quickNumberBtn.addEventListener("click", generateQuickNumberOptions);
+        quickNumberInput.addEventListener("keydown", (e) => { if (e.key === "Enter") generateQuickNumberOptions(); });
+        clearOptionsBtn.addEventListener("click", clearOptions);
+        optionsList.addEventListener("click", (e) => {
+          if (!(e.target instanceof HTMLElement)) return;
+          const idx = e.target.dataset.removeOption;
+          if (idx !== undefined) removeOption(Number(idx));
+        });
+        spinBtn.addEventListener("click", spinWheel);
+        sceneWrap.addEventListener("click", (e) => {
+          if (e.target instanceof HTMLElement && e.target.id !== "spinBtn") spinWheel();
+        });
+        sceneWrap.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            spinWheel();
+          }
+        });
+        window.addEventListener("resize", () => renderScene());
+        savePresetBtn.addEventListener("click", savePresetByPrompt);
+        favoritesTrigger.addEventListener("click", () => setFavoritesOpen(!favoritesPanel.classList.contains("open")));
+        muteTrigger.addEventListener("click", toggleMute);
+        favoritesBackdrop.addEventListener("click", () => setFavoritesOpen(false));
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") setFavoritesOpen(false); });
+        presetList.addEventListener("click", (e) => {
+          if (!(e.target instanceof HTMLElement)) return;
+          if (e.target.dataset.loadPreset) loadPreset(e.target.dataset.loadPreset);
+          if (e.target.dataset.deletePreset) deletePreset(e.target.dataset.deletePreset);
+        });
+      }
+
+      loadState();
+      renderAll();
+      bindEvents();
+      updateSpinAvailability();
+      (function idleLoop() {
+        if (!state.isSpinning) drawScene(performance.now());
+        requestAnimationFrame(idleLoop);
+      })();
+    })();
+  </script>
+</body>
+</html>
