@@ -426,31 +426,67 @@
       color: #fff;
     }
 
-    .mute-trigger {
+    .sound-panel {
       position: fixed;
       top: 16px;
       right: 68px;
       z-index: 100;
-      width: 44px;
-      height: 44px;
-      padding: 0;
+      width: min(46vw, 200px);
+      padding: 8px 10px;
       border-radius: 14px;
-      background: linear-gradient(145deg, rgba(168, 85, 247, 0.92), rgba(124, 58, 237, 0.9));
-      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(30, 20, 60, 0.88);
+      border: 1px solid var(--line);
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sound-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sound-label {
+      width: 28px;
+      font-size: 12px;
+      color: #e9d5ff;
+      flex-shrink: 0;
+    }
+
+    .sound-toggle {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: linear-gradient(145deg, rgba(168, 85, 247, 0.92), rgba(124, 58, 237, 0.9));
       color: #fff;
-      font-size: 18px;
+      font-size: 16px;
+      flex-shrink: 0;
       display: grid;
       place-items: center;
     }
-    .mute-trigger.is-muted {
+
+    .sound-toggle.is-off {
       background: linear-gradient(145deg, rgba(71, 85, 105, 0.92), rgba(51, 65, 85, 0.9));
       color: rgba(226, 232, 240, 0.75);
     }
 
+    .sound-slider {
+      flex: 1;
+      min-width: 0;
+      height: 4px;
+      accent-color: #c084fc;
+      cursor: pointer;
+    }
+
     .favorites-panel {
       position: fixed;
-      top: 68px;
+      top: 118px;
       right: 16px;
       z-index: 99;
       width: min(92vw, 340px);
@@ -489,6 +525,17 @@
     }
     .favorites-backdrop.open { display: block; }
 
+    @media (max-width: 480px) {
+      .sound-panel {
+        right: 60px;
+        width: min(52vw, 168px);
+        padding: 6px 8px;
+      }
+      .sound-label { width: 24px; font-size: 11px; }
+      .sound-toggle { width: 32px; height: 32px; font-size: 14px; }
+      .favorites-panel { top: 108px; }
+    }
+
     @media (min-width: 900px) {
       .layout-grid {
         grid-template-columns: 1fr 1.2fr 1fr;
@@ -499,7 +546,18 @@
 </head>
 <body>
   <audio id="bgm" preload="auto" playsinline hidden></audio>
-  <button id="muteTrigger" class="mute-trigger" type="button" aria-label="关闭声音" title="关闭声音">🔊</button>
+  <div id="soundPanel" class="sound-panel" aria-label="声音设置">
+    <div class="sound-row">
+      <span class="sound-label">背景</span>
+      <button id="bgmToggle" class="sound-toggle" type="button" title="背景音乐开关">🎵</button>
+      <input id="bgmVolume" class="sound-slider" type="range" min="0" max="100" value="42" title="背景音乐音量">
+    </div>
+    <div class="sound-row">
+      <span class="sound-label">音效</span>
+      <button id="sfxToggle" class="sound-toggle" type="button" title="交互与抽奖音效开关">🔊</button>
+      <input id="sfxVolume" class="sound-slider" type="range" min="0" max="100" value="42" title="音效音量">
+    </div>
+  </div>
   <button id="favoritesTrigger" class="favorites-trigger" type="button" aria-label="收藏" aria-expanded="false" title="收藏">★</button>
   <div id="favoritesBackdrop" class="favorites-backdrop" aria-hidden="true"></div>
   <aside id="favoritesPanel" class="favorites-panel" aria-hidden="true">
@@ -554,7 +612,16 @@
 
   <script>
     (function () {
-      const STORAGE_KEYS = { options: "lw_options", history: "lw_history", presets: "lw_presets", muted: "lw_muted" };
+      const STORAGE_KEYS = {
+        options: "lw_options",
+        history: "lw_history",
+        presets: "lw_presets",
+        muted: "lw_muted",
+        bgmMuted: "lw_bgm_muted",
+        sfxMuted: "lw_sfx_muted",
+        bgmVol: "lw_bgm_vol",
+        sfxVol: "lw_sfx_vol"
+      };
       const HISTORY_LIMIT = 10;
       const MAX_QUICK_NUMBER = 200;
       const COLORS = ["#6dd65c", "#e04737", "#f2c43c", "#275be8", "#78db70", "#ed5e4f", "#3f6ff0", "#87d76d"];
@@ -578,7 +645,10 @@
       const savePresetBtn = document.getElementById("savePresetBtn");
       const presetList = document.getElementById("presetList");
       const bgmEl = document.getElementById("bgm");
-      const muteTrigger = document.getElementById("muteTrigger");
+      const bgmToggle = document.getElementById("bgmToggle");
+      const sfxToggle = document.getElementById("sfxToggle");
+      const bgmVolumeInput = document.getElementById("bgmVolume");
+      const sfxVolumeInput = document.getElementById("sfxVolume");
       const favoritesTrigger = document.getElementById("favoritesTrigger");
       const favoritesPanel = document.getElementById("favoritesPanel");
       const favoritesBackdrop = document.getElementById("favoritesBackdrop");
@@ -627,23 +697,35 @@
       const audio = {
         ctx: null,
         master: null,
-        muted: false,
+        bgmMuted: false,
+        sfxMuted: false,
+        bgmVolume: 0.42,
+        sfxVolume: 0.42,
         tensionActive: false,
         tensionNodes: null,
         BGM_PATH: "audio/haoyunlai.ogg",
-        BGM_VOLUME: 0.42,
         bgmReady: false,
         bgmMissing: false,
         _gestureBound: false,
 
+        applyBgmVolume() {
+          if (bgmEl) bgmEl.volume = Math.max(0, Math.min(1, this.bgmVolume));
+        },
+
+        applySfxVolume() {
+          if (this.master) {
+            this.master.gain.value = Math.max(0, Math.min(1, this.sfxVolume));
+          }
+        },
+
         initBgm() {
           if (!bgmEl) return;
           bgmEl.loop = true;
-          bgmEl.volume = this.BGM_VOLUME;
+          this.applyBgmVolume();
           bgmEl.src = this.BGM_PATH;
           bgmEl.addEventListener("canplaythrough", () => {
             this.bgmReady = true;
-            if (!this.muted) this.startBgm();
+            if (!this.bgmMuted) this.startBgm();
           }, { once: true });
           bgmEl.addEventListener("error", () => {
             this.bgmMissing = true;
@@ -652,7 +734,7 @@
         },
 
         startBgm() {
-          if (this.muted || !bgmEl || this.bgmMissing) return;
+          if (this.bgmMuted || !bgmEl || this.bgmMissing) return;
           const playPromise = bgmEl.play();
           if (playPromise && typeof playPromise.catch === "function") {
             playPromise.catch(() => {});
@@ -668,30 +750,45 @@
           if (this._gestureBound) return;
           this._gestureBound = true;
           const unlock = () => {
-            if (!this.muted) {
-              this.unlock();
-              this.startBgm();
-            }
+            if (!this.sfxMuted) this.unlock();
+            if (!this.bgmMuted) this.startBgm();
           };
           document.addEventListener("pointerdown", unlock, { once: true, passive: true });
           document.addEventListener("keydown", unlock, { once: true });
         },
 
-        setMuted(muted) {
-          this.muted = muted;
-          if (muted) {
-            this.pauseBgm();
-            this.stopAll();
-          } else {
-            this.unlock();
-            this.startBgm();
-          }
-          updateMuteButton();
-          persistMuted();
+        setBgmMuted(muted) {
+          this.bgmMuted = muted;
+          if (muted) this.pauseBgm();
+          else this.startBgm();
+          updateSoundPanel();
+          persistAudioSettings();
+        },
+
+        setSfxMuted(muted) {
+          this.sfxMuted = muted;
+          if (muted) this.stopAll();
+          else this.unlock();
+          updateSoundPanel();
+          persistAudioSettings();
+        },
+
+        setBgmVolume(vol) {
+          this.bgmVolume = Math.max(0, Math.min(1, vol));
+          this.applyBgmVolume();
+          updateSoundPanel();
+          persistAudioSettings();
+        },
+
+        setSfxVolume(vol) {
+          this.sfxVolume = Math.max(0, Math.min(1, vol));
+          this.applySfxVolume();
+          updateSoundPanel();
+          persistAudioSettings();
         },
 
         _uiTone(opts) {
-          if (this.muted) return;
+          if (this.sfxMuted) return;
           this.unlock();
           if (!this.ctx) return;
           const time = this.now() + (opts.delay || 0);
@@ -761,13 +858,13 @@
         },
 
         unlock() {
-          if (this.muted) return;
+          if (this.sfxMuted) return;
           if (!this.ctx) {
             const Ctx = window.AudioContext || window.webkitAudioContext;
             if (!Ctx) return;
             this.ctx = new Ctx();
             this.master = this.ctx.createGain();
-            this.master.gain.value = 0.42;
+            this.applySfxVolume();
             this.master.connect(this.ctx.destination);
           }
           if (this.ctx.state === "suspended") {
@@ -795,7 +892,7 @@
         },
 
         startTension() {
-          if (this.muted) return;
+          if (this.sfxMuted) return;
           this.unlock();
           if (!this.ctx) return;
           this.stopTension();
@@ -842,7 +939,7 @@
         },
 
         updateTension(progress) {
-          if (!this.tensionActive || !this.tensionNodes || this.muted) return;
+          if (!this.tensionActive || !this.tensionNodes || this.sfxMuted) return;
           const p = Math.max(0, Math.min(1, progress));
           const time = this.now();
           const { filter, droneGain, osc } = this.tensionNodes;
@@ -852,7 +949,7 @@
         },
 
         playPassTick(progress) {
-          if (this.muted) return;
+          if (this.sfxMuted) return;
           this.unlock();
           if (!this.ctx) return;
           const p = Math.max(0, Math.min(1, progress));
@@ -871,7 +968,7 @@
         },
 
         playExplosion() {
-          if (this.muted) return;
+          if (this.sfxMuted) return;
           this.unlock();
           if (!this.ctx) return;
           const time = this.now();
@@ -909,7 +1006,7 @@
         },
 
         playResult() {
-          if (this.muted) return;
+          if (this.sfxMuted) return;
           this.unlock();
           if (!this.ctx) return;
           const time = this.now();
@@ -1003,29 +1100,59 @@
         state.presets = Array.isArray(readJSON(STORAGE_KEYS.presets, []))
           ? readJSON(STORAGE_KEYS.presets, [])
           : [];
-        audio.muted = localStorage.getItem(STORAGE_KEYS.muted) === "1";
-        updateMuteButton();
+        const legacyMuted = localStorage.getItem(STORAGE_KEYS.muted) === "1";
+        const bgmMutedStored = localStorage.getItem(STORAGE_KEYS.bgmMuted);
+        const sfxMutedStored = localStorage.getItem(STORAGE_KEYS.sfxMuted);
+        audio.bgmMuted = bgmMutedStored !== null ? bgmMutedStored === "1" : legacyMuted;
+        audio.sfxMuted = sfxMutedStored !== null ? sfxMutedStored === "1" : legacyMuted;
+
+        const bgmVol = parseFloat(localStorage.getItem(STORAGE_KEYS.bgmVol));
+        const sfxVol = parseFloat(localStorage.getItem(STORAGE_KEYS.sfxVol));
+        audio.bgmVolume = Number.isFinite(bgmVol) ? Math.max(0, Math.min(1, bgmVol)) : 0.42;
+        audio.sfxVolume = Number.isFinite(sfxVol) ? Math.max(0, Math.min(1, sfxVol)) : 0.42;
+        updateSoundPanel();
       }
 
       function persistOptions() { saveJSON(STORAGE_KEYS.options, state.options); }
       function persistHistory() { saveJSON(STORAGE_KEYS.history, state.history); }
       function persistPresets() { saveJSON(STORAGE_KEYS.presets, state.presets); }
 
-      function persistMuted() {
-        try { localStorage.setItem(STORAGE_KEYS.muted, audio.muted ? "1" : "0"); } catch {}
+      function persistAudioSettings() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.bgmMuted, audio.bgmMuted ? "1" : "0");
+          localStorage.setItem(STORAGE_KEYS.sfxMuted, audio.sfxMuted ? "1" : "0");
+          localStorage.setItem(STORAGE_KEYS.bgmVol, String(audio.bgmVolume));
+          localStorage.setItem(STORAGE_KEYS.sfxVol, String(audio.sfxVolume));
+        } catch {}
       }
 
-      function updateMuteButton() {
-        muteTrigger.textContent = audio.muted ? "🔇" : "🔊";
-        muteTrigger.setAttribute("aria-label", audio.muted ? "开启声音" : "关闭声音");
-        muteTrigger.setAttribute("title", audio.muted ? "开启声音（背景音乐+音效）" : "关闭声音（背景音乐+音效）");
-        muteTrigger.classList.toggle("is-muted", audio.muted);
+      function updateSoundPanel() {
+        bgmToggle.textContent = audio.bgmMuted ? "🔇" : "🎵";
+        bgmToggle.classList.toggle("is-off", audio.bgmMuted);
+        bgmToggle.title = audio.bgmMuted ? "开启背景音乐" : "关闭背景音乐";
+        bgmToggle.setAttribute("aria-label", bgmToggle.title);
+
+        sfxToggle.textContent = audio.sfxMuted ? "🔇" : "🔊";
+        sfxToggle.classList.toggle("is-off", audio.sfxMuted);
+        sfxToggle.title = audio.sfxMuted ? "开启音效" : "关闭音效";
+        sfxToggle.setAttribute("aria-label", sfxToggle.title);
+
+        bgmVolumeInput.value = String(Math.round(audio.bgmVolume * 100));
+        sfxVolumeInput.value = String(Math.round(audio.sfxVolume * 100));
+        bgmVolumeInput.disabled = audio.bgmMuted;
+        sfxVolumeInput.disabled = audio.sfxMuted;
       }
 
-      function toggleMute() {
-        const willEnable = audio.muted;
-        audio.setMuted(!audio.muted);
-        if (willEnable) audio.playUiClick();
+      function toggleBgm() {
+        const enabling = audio.bgmMuted;
+        audio.setBgmMuted(!audio.bgmMuted);
+        if (enabling && !audio.sfxMuted) audio.playUiClick();
+      }
+
+      function toggleSfx() {
+        const enabling = audio.sfxMuted;
+        audio.setSfxMuted(!audio.sfxMuted);
+        if (enabling) audio.playUiClick();
       }
 
       function updateSpinAvailability() {
@@ -1738,7 +1865,14 @@
         window.addEventListener("resize", () => renderScene());
         savePresetBtn.addEventListener("click", savePresetByPrompt);
         favoritesTrigger.addEventListener("click", () => setFavoritesOpen(!favoritesPanel.classList.contains("open")));
-        muteTrigger.addEventListener("click", toggleMute);
+        bgmToggle.addEventListener("click", toggleBgm);
+        sfxToggle.addEventListener("click", toggleSfx);
+        bgmVolumeInput.addEventListener("input", () => {
+          audio.setBgmVolume(Number(bgmVolumeInput.value) / 100);
+        });
+        sfxVolumeInput.addEventListener("input", () => {
+          audio.setSfxVolume(Number(sfxVolumeInput.value) / 100);
+        });
         favoritesBackdrop.addEventListener("click", () => setFavoritesOpen(false));
         document.addEventListener("keydown", (e) => { if (e.key === "Escape") setFavoritesOpen(false); });
         presetList.addEventListener("click", (e) => {
@@ -1754,7 +1888,7 @@
       updateSpinAvailability();
       audio.initBgm();
       audio.bindAutoplayUnlock();
-      if (!audio.muted) audio.startBgm();
+      if (!audio.bgmMuted) audio.startBgm();
       (function idleLoop() {
         if (!state.isSpinning) drawScene(performance.now());
         requestAnimationFrame(idleLoop);
