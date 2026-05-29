@@ -1,15 +1,16 @@
 # 背景音乐
 
-请把 **好运来** 音频文件放到本目录，并命名为：
+请把 **好运来** 音频文件放到本目录，并命名为（二选一）：
 
 ```
 haoyunlai.mp3
+haoyunlai.ogg
 ```
 
 ## 要求
 
-- 格式：`MP3`（推荐）或 `M4A`（需同时改 `index.html` 里的 `BGM_PATH`）
-- 文件名必须一致：`haoyunlai.mp3`
+- 格式：`MP3` 或 `OGG`（网页可直接播放）
+- 文件名必须为 `haoyunlai.mp3` 或 `haoyunlai.ogg`（与 `index.html` 里 `BGM_PATH` 一致）
 - 建议码率 128–192 kbps，体积控制在 5MB 以内，加载更快
 
 ## 放好后

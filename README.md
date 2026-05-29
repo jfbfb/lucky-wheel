@@ -41,7 +41,7 @@ npx --yes serve .
 
 ## 背景音乐
 
-1. 将音频文件命名为 `haoyunlai.mp3`
+1. 将音频文件命名为 `haoyunlai.mp3` 或 `haoyunlai.ogg`
 2. 放入 [audio/](audio/) 目录
 3. 运行 `.\update.ps1` 更新网站
 
