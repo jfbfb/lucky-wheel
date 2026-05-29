@@ -498,7 +498,8 @@
   </style>
 </head>
 <body>
-  <button id="muteTrigger" class="mute-trigger" type="button" aria-label="静音" title="静音">🔊</button>
+  <audio id="bgm" preload="auto" playsinline hidden></audio>
+  <button id="muteTrigger" class="mute-trigger" type="button" aria-label="关闭声音" title="关闭声音">🔊</button>
   <button id="favoritesTrigger" class="favorites-trigger" type="button" aria-label="收藏" aria-expanded="false" title="收藏">★</button>
   <div id="favoritesBackdrop" class="favorites-backdrop" aria-hidden="true"></div>
   <aside id="favoritesPanel" class="favorites-panel" aria-hidden="true">
@@ -576,6 +577,7 @@
       const historyList = document.getElementById("historyList");
       const savePresetBtn = document.getElementById("savePresetBtn");
       const presetList = document.getElementById("presetList");
+      const bgmEl = document.getElementById("bgm");
       const muteTrigger = document.getElementById("muteTrigger");
       const favoritesTrigger = document.getElementById("favoritesTrigger");
       const favoritesPanel = document.getElementById("favoritesPanel");
@@ -628,6 +630,65 @@
         muted: false,
         tensionActive: false,
         tensionNodes: null,
+        BGM_PATH: "audio/haoyunlai.mp3",
+        BGM_VOLUME: 0.42,
+        bgmReady: false,
+        bgmMissing: false,
+        _gestureBound: false,
+
+        initBgm() {
+          if (!bgmEl) return;
+          bgmEl.loop = true;
+          bgmEl.volume = this.BGM_VOLUME;
+          bgmEl.src = this.BGM_PATH;
+          bgmEl.addEventListener("canplaythrough", () => {
+            this.bgmReady = true;
+            if (!this.muted) this.startBgm();
+          }, { once: true });
+          bgmEl.addEventListener("error", () => {
+            this.bgmMissing = true;
+          });
+          bgmEl.load();
+        },
+
+        startBgm() {
+          if (this.muted || !bgmEl || this.bgmMissing) return;
+          const playPromise = bgmEl.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {});
+          }
+        },
+
+        pauseBgm() {
+          if (!bgmEl) return;
+          bgmEl.pause();
+        },
+
+        bindAutoplayUnlock() {
+          if (this._gestureBound) return;
+          this._gestureBound = true;
+          const unlock = () => {
+            if (!this.muted) {
+              this.unlock();
+              this.startBgm();
+            }
+          };
+          document.addEventListener("pointerdown", unlock, { once: true, passive: true });
+          document.addEventListener("keydown", unlock, { once: true });
+        },
+
+        setMuted(muted) {
+          this.muted = muted;
+          if (muted) {
+            this.pauseBgm();
+            this.stopAll();
+          } else {
+            this.unlock();
+            this.startBgm();
+          }
+          updateMuteButton();
+          persistMuted();
+        },
 
         _uiTone(opts) {
           if (this.muted) return;
@@ -956,21 +1017,15 @@
 
       function updateMuteButton() {
         muteTrigger.textContent = audio.muted ? "🔇" : "🔊";
-        muteTrigger.setAttribute("aria-label", audio.muted ? "取消静音" : "静音");
-        muteTrigger.setAttribute("title", audio.muted ? "取消静音" : "静音");
+        muteTrigger.setAttribute("aria-label", audio.muted ? "开启声音" : "关闭声音");
+        muteTrigger.setAttribute("title", audio.muted ? "开启声音（背景音乐+音效）" : "关闭声音（背景音乐+音效）");
         muteTrigger.classList.toggle("is-muted", audio.muted);
       }
 
       function toggleMute() {
-        audio.muted = !audio.muted;
-        if (audio.muted) {
-          audio.stopAll();
-        } else {
-          audio.unlock();
-          audio.playUiClick();
-        }
-        persistMuted();
-        updateMuteButton();
+        const willEnable = audio.muted;
+        audio.setMuted(!audio.muted);
+        if (willEnable) audio.playUiClick();
       }
 
       function updateSpinAvailability() {
@@ -1697,6 +1752,9 @@
       renderAll();
       bindEvents();
       updateSpinAvailability();
+      audio.initBgm();
+      audio.bindAutoplayUnlock();
+      if (!audio.muted) audio.startBgm();
       (function idleLoop() {
         if (!state.isSpinning) drawScene(performance.now());
         requestAnimationFrame(idleLoop);

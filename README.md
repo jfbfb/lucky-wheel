@@ -36,4 +36,13 @@ npx --yes serve .
 - 约 5 秒紧张抽奖动画
 - 最近 10 条历史记录
 - 收藏方案（localStorage）
-- 音效（可静音）
+- 背景音乐《好运来》循环播放（见下方配置）
+- 音效（右上角可开关声音）
+
+## 背景音乐
+
+1. 将音频文件命名为 `haoyunlai.mp3`
+2. 放入 [audio/](audio/) 目录
+3. 运行 `.\update.ps1` 更新网站
+
+详见 [audio/README.md](audio/README.md)。
