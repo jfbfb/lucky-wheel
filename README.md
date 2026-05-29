@@ -4,9 +4,7 @@
 
 ## 在线访问
 
-部署 GitHub Pages 后，访问：
-
-`https://<你的用户名>.github.io/lucky-wheel/`
+https://jfbfb.github.io/lucky-wheel/
 
 ## 本地运行
 
