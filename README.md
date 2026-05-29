@@ -6,6 +6,22 @@
 
 https://jfbfb.github.io/lucky-wheel/
 
+## 更新网站
+
+在项目目录打开终端，执行：
+
+```powershell
+.\update.ps1
+```
+
+或带提交说明：
+
+```powershell
+.\update.ps1 "修复按钮音效"
+```
+
+也可双击 `update.bat`。脚本会自动 `git add`、提交并推送到 GitHub，Pages 约 1~2 分钟后更新。
+
 ## 本地运行
 
 双击 [index.html](index.html)，或用本地服务器打开：
