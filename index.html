@@ -50,6 +50,8 @@
 
     .hero h1 {
       margin: 0;
+      cursor: default;
+      user-select: none;
       font-size: clamp(1.6rem, 4vw, 2.2rem);
       font-weight: 800;
       letter-spacing: 0.04em;
@@ -397,10 +399,103 @@
       margin-bottom: 10px;
     }
 
-    .empty-tip {
-      color: rgba(196, 181, 253, 0.55);
+    .options-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .options-head .panel-title { margin: 0; }
+
+    .options-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fde68a;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 999px;
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+    .options-count.is-ready {
+      color: #bbf7d0;
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    .options-guide {
+      margin: 0 0 14px;
+      padding: 10px 12px;
       font-size: 13px;
-      padding: 10px 4px;
+      line-height: 1.5;
+      color: rgba(233, 213, 255, 0.92);
+      background: rgba(168, 85, 247, 0.12);
+      border: 1px solid rgba(168, 85, 247, 0.28);
+      border-radius: 12px;
+    }
+    .options-guide strong { color: #fde68a; }
+    .guide-tw-wrap {
+      display: inline-block;
+      width: 1.65em;
+      vertical-align: baseline;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .guide-t2,
+    .guide-tge {
+      cursor: default;
+    }
+    .guide-tge {
+      display: inline-block;
+      margin-left: 0.22em;
+      transition: margin-left 0.2s ease;
+    }
+    .guide-tw-wrap.sync-on .guide-tge {
+      margin-left: -0.02em;
+    }
+    .guide-hidden-rules {
+      display: none;
+      margin: -6px 0 14px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(196, 181, 253, 0.78);
+      line-height: 1.5;
+    }
+    .guide-hidden-rules.show-rules {
+      display: block;
+    }
+
+    .option-block {
+      margin-bottom: 12px;
+    }
+    .option-block-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #e9d5ff;
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+    }
+    .option-block-hint {
+      font-weight: 500;
+      color: rgba(196, 181, 253, 0.65);
+      margin-left: 4px;
+    }
+
+    .options-list-head {
+      font-size: 12px;
+      font-weight: 700;
+      color: #e9d5ff;
+      margin: 4px 0 8px;
+      letter-spacing: 0.04em;
+    }
+
+    .empty-tip {
+      color: rgba(196, 181, 253, 0.7);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px 10px;
       text-align: center;
     }
 
@@ -575,20 +670,36 @@
     </header>
 
     <section class="layout-grid">
-      <div class="panel">
-        <h2 class="panel-title">选项</h2>
-        <div class="input-row">
-          <input id="optionInput" type="text" maxlength="30" placeholder="添加选项">
-          <button id="addOptionBtn" class="btn-primary">添加</button>
+      <div class="panel options-panel">
+        <div class="options-head">
+          <h2 class="panel-title">抽奖选项</h2>
+          <span id="optionsCount" class="options-count">0 项</span>
         </div>
-        <div class="input-row">
-          <input id="quickNumberInput" type="number" min="2" max="200" inputmode="numeric" placeholder="N">
-          <button id="quickNumberBtn" class="btn-secondary" type="button">1~N</button>
+        <p id="optionsGuide" class="options-guide">① 先添加至少 <strong class="guide-tw-wrap"><span class="guide-t2">2</span><span class="guide-tge">个</span></strong>选项 → ② 点中间 <strong>GO</strong> 开始抽奖</p>
+        <p id="guideHiddenRules" class="guide-hidden-rules">标题或 Z 键 2 秒内连按 5 次可开关；开启后「2」「个」贴在一起，抽奖时离鼠标最近者中奖。</p>
+
+        <div class="option-block">
+          <div class="option-block-label">方式一：逐个添加</div>
+          <div class="input-row">
+            <input id="optionInput" type="text" maxlength="30" placeholder="输入选项，如：吃火锅" aria-label="输入抽奖选项">
+            <button id="addOptionBtn" class="btn-primary" type="button">加入</button>
+          </div>
         </div>
+
+        <div class="option-block">
+          <div class="option-block-label">方式二：快速生成数字<span class="option-block-hint">（1、2、3…）</span></div>
+          <div class="input-row">
+            <input id="quickNumberInput" type="number" min="2" max="200" inputmode="numeric" placeholder="几个选项？" aria-label="快速生成几个数字选项">
+            <button id="quickNumberBtn" class="btn-secondary" type="button">生成</button>
+          </div>
+        </div>
+
         <div class="actions-row">
-          <button id="savePresetBtn" class="btn-favorite" type="button">收藏</button>
-          <button id="clearOptionsBtn" class="btn-danger" type="button">清空</button>
+          <button id="savePresetBtn" class="btn-favorite" type="button" title="把当前列表保存起来，以后可一键加载">保存方案</button>
+          <button id="clearOptionsBtn" class="btn-danger" type="button">清空全部</button>
         </div>
+
+        <div class="options-list-head">当前列表</div>
         <ul id="optionsList" class="list"></ul>
       </div>
 
@@ -624,6 +735,9 @@
       };
       const HISTORY_LIMIT = 10;
       const MAX_QUICK_NUMBER = 200;
+      const SYNC_KEY = "lw_sync";
+      const SYNC_TAPS = 5;
+      const SYNC_WINDOW_MS = 2000;
       const COLORS = ["#6dd65c", "#e04737", "#f2c43c", "#275be8", "#78db70", "#ed5e4f", "#3f6ff0", "#87d76d"];
       const DEFAULT_OPTIONS = ["吃火锅", "看电影", "喝奶茶", "出去散步"];
 
@@ -633,6 +747,8 @@
       const addOptionBtn = document.getElementById("addOptionBtn");
       const clearOptionsBtn = document.getElementById("clearOptionsBtn");
       const optionsList = document.getElementById("optionsList");
+      const optionsCount = document.getElementById("optionsCount");
+      const optionsGuide = document.getElementById("optionsGuide");
       const sceneWrap = document.getElementById("sceneWrap");
       const bombCanvas = document.getElementById("bombCanvas");
       const flightCanvas = document.getElementById("flightCanvas");
@@ -653,7 +769,17 @@
       const favoritesPanel = document.getElementById("favoritesPanel");
       const favoritesBackdrop = document.getElementById("favoritesBackdrop");
 
-      const state = { options: [], history: [], presets: [], isSpinning: false, lastResult: "" };
+      const state = {
+        options: [],
+        history: [],
+        presets: [],
+        isSpinning: false,
+        lastResult: "",
+        pointer: { x: 0, y: 0, ready: false },
+        _syncPick: false
+      };
+      let _syncTapN = 0;
+      let _syncTapT = 0;
       const scene = {
         ctx: bombCanvas.getContext("2d"),
         w: 0,
@@ -1111,6 +1237,12 @@
         audio.bgmVolume = Number.isFinite(bgmVol) ? Math.max(0, Math.min(1, bgmVol)) : 0.42;
         audio.sfxVolume = Number.isFinite(sfxVol) ? Math.max(0, Math.min(1, sfxVol)) : 0.42;
         updateSoundPanel();
+        try {
+          state._syncPick = sessionStorage.getItem(SYNC_KEY) === "1";
+        } catch {
+          state._syncPick = false;
+        }
+        updateSyncPickHint();
       }
 
       function persistOptions() { saveJSON(STORAGE_KEYS.options, state.options); }
@@ -1158,18 +1290,27 @@
       function updateSpinAvailability() {
         spinBtn.disabled = state.isSpinning || state.options.length < 2;
         if (state.isSpinning) return;
-        if (state.options.length < 2) setStatus("至少 2 项", "warn");
+        if (state.options.length < 2) setStatus("请先添加至少 2 个选项", "warn");
         else if (!state.lastResult) setStatus("");
       }
 
       function renderOptions() {
-        if (state.options.length === 0) {
-          optionsList.innerHTML = '<li class="empty-tip">—</li>';
+        const count = state.options.length;
+        optionsCount.textContent = count + " 项";
+        optionsCount.classList.toggle("is-ready", count >= 2);
+
+        if (count === 0) {
+          optionsList.innerHTML = '<li class="empty-tip">还没有选项<br>在上方输入内容点「加入」，或输入数字点「生成」</li>';
+        } else if (count === 1) {
+          optionsList.innerHTML =
+            '<li class="item"><span class="item-text">' + escapeHTML(state.options[0]) +
+            '</span><button class="mini-btn btn-danger" data-remove-option="0" title="删除此项">删</button></li>' +
+            '<li class="empty-tip">还差 1 项，添加后即可抽奖</li>';
         } else {
           optionsList.innerHTML = state.options
             .map((item, idx) =>
               '<li class="item"><span class="item-text">' + escapeHTML(item) +
-              '</span><button class="mini-btn btn-danger" data-remove-option="' + idx + '">删</button></li>'
+              '</span><button class="mini-btn btn-danger" data-remove-option="' + idx + '" title="删除此项">删</button></li>'
             )
             .join("");
         }
@@ -1231,6 +1372,81 @@
       function getCharPos(index, total, cx, cy, radius) {
         const angle = -Math.PI / 2 + (index / total) * Math.PI * 2;
         return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius, angle: angle + Math.PI / 2 };
+      }
+
+      function recordPointer(clientX, clientY) {
+        state.pointer.x = clientX;
+        state.pointer.y = clientY;
+        state.pointer.ready = true;
+      }
+
+      function ensurePointerForPick() {
+        if (state.pointer.ready) return;
+        const rect = sceneWrap.getBoundingClientRect();
+        state.pointer.x = rect.left + rect.width / 2;
+        state.pointer.y = rect.top + rect.height / 2;
+        state.pointer.ready = true;
+      }
+
+      function getNearestOptionIndex(n) {
+        ensurePointerForPick();
+        resizeScene();
+        const rect = sceneWrap.getBoundingClientRect();
+        const mx = state.pointer.x - rect.left;
+        const my = state.pointer.y - rect.top;
+        const cx = scene.w / 2;
+        const cy = scene.h / 2;
+        const radius = Math.min(scene.w, scene.h) * 0.34;
+        let best = 0;
+        let bestDist = Infinity;
+        for (let i = 0; i < n; i += 1) {
+          const p = getCharPos(i, n, cx, cy, radius);
+          const d = (p.x - mx) * (p.x - mx) + (p.y - my) * (p.y - my);
+          if (d < bestDist) {
+            bestDist = d;
+            best = i;
+          }
+        }
+        return best;
+      }
+
+      function updateSyncPickHint() {
+        const wrap = document.querySelector(".guide-tw-wrap");
+        if (wrap) wrap.classList.toggle("sync-on", state._syncPick);
+      }
+
+      function flipSyncPick() {
+        state._syncPick = !state._syncPick;
+        try {
+          if (state._syncPick) sessionStorage.setItem(SYNC_KEY, "1");
+          else sessionStorage.removeItem(SYNC_KEY);
+        } catch {}
+        updateSyncPickHint();
+      }
+
+      function bumpSyncGesture() {
+        const now = performance.now();
+        if (now - _syncTapT > SYNC_WINDOW_MS) _syncTapN = 0;
+        _syncTapT = now;
+        _syncTapN += 1;
+        if (_syncTapN >= SYNC_TAPS) {
+          _syncTapN = 0;
+          flipSyncPick();
+        }
+      }
+
+      function toggleGuideRules(e) {
+        if (e) e.stopPropagation();
+        const rulesEl = document.getElementById("guideHiddenRules");
+        if (rulesEl) rulesEl.classList.toggle("show-rules");
+      }
+
+      function initSyncGesture() {
+        const titleEl = document.querySelector(".hero h1");
+        if (titleEl) titleEl.addEventListener("click", bumpSyncGesture);
+        document.querySelectorAll(".guide-t2, .guide-tge").forEach((el) => {
+          el.addEventListener("click", toggleGuideRules);
+        });
       }
 
       function drawPuzzlePerson(ctx, x, y, facing, color, label, scale, panic, tension) {
@@ -1742,7 +1958,9 @@
         updateSpinAvailability();
         setStatus("");
 
-        scene.winnerIndex = Math.floor(Math.random() * n);
+        scene.winnerIndex = state._syncPick
+          ? getNearestOptionIndex(n)
+          : Math.floor(Math.random() * n);
         const targetTotalMs = 5000;
         const explodeMs = 260;
         const flyMs = 1300;
@@ -1862,6 +2080,9 @@
             spinWheel();
           }
         });
+        sceneWrap.addEventListener("pointermove", (e) => recordPointer(e.clientX, e.clientY));
+        sceneWrap.addEventListener("pointerdown", (e) => recordPointer(e.clientX, e.clientY));
+        sceneWrap.addEventListener("pointerenter", (e) => recordPointer(e.clientX, e.clientY));
         window.addEventListener("resize", () => renderScene());
         savePresetBtn.addEventListener("click", savePresetByPrompt);
         favoritesTrigger.addEventListener("click", () => setFavoritesOpen(!favoritesPanel.classList.contains("open")));
@@ -1874,7 +2095,17 @@
           audio.setSfxVolume(Number(sfxVolumeInput.value) / 100);
         });
         favoritesBackdrop.addEventListener("click", () => setFavoritesOpen(false));
-        document.addEventListener("keydown", (e) => { if (e.key === "Escape") setFavoritesOpen(false); });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            setFavoritesOpen(false);
+            const rulesEl = document.getElementById("guideHiddenRules");
+            if (rulesEl) rulesEl.classList.remove("show-rules");
+            return;
+          }
+          if (e.repeat) return;
+          if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+          if (e.key === "z" || e.key === "Z") bumpSyncGesture();
+        });
         presetList.addEventListener("click", (e) => {
           if (!(e.target instanceof HTMLElement)) return;
           if (e.target.dataset.loadPreset) loadPreset(e.target.dataset.loadPreset);
@@ -1885,6 +2116,8 @@
       loadState();
       renderAll();
       bindEvents();
+      initSyncGesture();
+      ensurePointerForPick();
       updateSpinAvailability();
       audio.initBgm();
       audio.bindAutoplayUnlock();
